@@ -1,0 +1,68 @@
+{
+  "_comment": "Exemplo de payload que o n8n deve enviar ao Supabase em cada evento",
+  "_workflows": {
+    "1_nova_conversa": {
+      "trigger": "Nova mensagem recebida (WhatsApp/Telegram/etc)",
+      "supabase_node": "Insert Row",
+      "table": "conversations",
+      "body": {
+        "client_id": "{{ $vars.CLIENT_ID }}",
+        "agent_id": "{{ $vars.AGENT_ID }}",
+        "lead_phone": "{{ $json.from }}",
+        "lead_name": "{{ $json.name }}",
+        "started_at": "{{ $now.toISO() }}",
+        "status": "open"
+      }
+    },
+    "2_primeira_resposta_ia": {
+      "trigger": "Agente IA enviou primeira resposta",
+      "supabase_node": "Update Row",
+      "table": "conversations",
+      "filter": "id=eq.{{ $json.conversation_id }}",
+      "body": {
+        "first_response_at": "{{ $now.toISO() }}",
+        "status": "attending"
+      }
+    },
+    "3_lead_qualificado": {
+      "trigger": "Agente IA identificou lead qualificado",
+      "supabase_node": "Update Row",
+      "table": "conversations",
+      "filter": "id=eq.{{ $json.conversation_id }}",
+      "body": {
+        "qualified_at": "{{ $now.toISO() }}",
+        "is_qualified": true,
+        "status": "qualified"
+      }
+    },
+    "4_follow_up": {
+      "trigger": "Lead precisa de follow-up",
+      "supabase_node": "Update Row",
+      "table": "conversations",
+      "filter": "id=eq.{{ $json.conversation_id }}",
+      "body": {
+        "is_follow_up": true,
+        "status": "follow_up"
+      }
+    },
+    "5_handoff_para_atendente": {
+      "trigger": "Agente IA solicitou atendente humano",
+      "supabase_node": "Update Row",
+      "table": "conversations",
+      "filter": "id=eq.{{ $json.conversation_id }}",
+      "body": {
+        "handoff_requested_at": "{{ $now.toISO() }}",
+        "status": "transferred"
+      }
+    },
+    "6_atendente_assumiu": {
+      "trigger": "Atendente humano entrou na conversa",
+      "supabase_node": "Update Row",
+      "table": "conversations",
+      "filter": "id=eq.{{ $json.conversation_id }}",
+      "body": {
+        "attendant_joined_at": "{{ $now.toISO() }}"
+      }
+    }
+  }
+}
