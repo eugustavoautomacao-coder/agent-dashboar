@@ -9,6 +9,7 @@ import { RecentLeadsTable } from '@/components/RecentLeadsTable'
 import { formatDuration } from '@/lib/metrics'
 import { format } from 'date-fns'
 import { ptBR } from 'date-fns/locale'
+import { useRouter } from 'next/navigation'
 import {
   Users,
   CheckCircle,
@@ -18,10 +19,12 @@ import {
   Bot,
   Activity,
   LogOut,
+  Shield,
 } from 'lucide-react'
 
 export default function DashboardPage() {
-  const { user, clientId: authClientId, clientName: authClientName, isAdmin, isLoading: authLoading, signOut } = useAuth()
+  const router = useRouter()
+  const { user, clientId: authClientId, clientName: authClientName, isAdmin, isSuperAdmin, isLoading: authLoading, signOut } = useAuth()
 
   const {
     clients,
@@ -73,6 +76,17 @@ export default function DashboardPage() {
 
             {/* Controles */}
             <div className="flex items-center gap-3 flex-wrap justify-end">
+              {/* Botão Super Admin */}
+              {isSuperAdmin && (
+                <button
+                  onClick={() => router.push('/super-admin')}
+                  className="flex items-center gap-1.5 rounded-lg border border-violet-500/40 bg-violet-600/10 px-3 py-1.5 text-xs font-medium text-violet-400 transition-colors hover:bg-violet-600/20"
+                >
+                  <Shield className="h-3.5 w-3.5" />
+                  Super Admin
+                </button>
+              )}
+
               {/* Filtro de cliente — apenas admin vê o seletor */}
               {isAdmin && (
                 <select
@@ -125,7 +139,7 @@ export default function DashboardPage() {
                 <div className="hidden sm:block text-right">
                   <p className="text-[10px] font-medium text-white leading-none">{user?.email?.split('@')[0]}</p>
                   <p className="text-[9px] text-slate-500 leading-none mt-0.5">
-                    {isAdmin ? 'Admin' : (authClientName ?? 'Cliente')}
+                    {isSuperAdmin ? 'Super Admin' : isAdmin ? 'Admin' : (authClientName ?? 'Cliente')}
                   </p>
                 </div>
                 <button

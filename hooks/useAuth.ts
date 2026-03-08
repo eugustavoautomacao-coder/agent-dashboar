@@ -10,6 +10,7 @@ interface AuthState {
   clientId: string | null
   clientName: string | null
   isAdmin: boolean
+  isSuperAdmin: boolean
   isLoading: boolean
 }
 
@@ -20,18 +21,29 @@ export function useAuth() {
     clientId: null,
     clientName: null,
     isAdmin: false,
+    isSuperAdmin: false,
     isLoading: true,
   })
 
-  // Busca a qual cliente o usuário pertence
   const fetchClientBinding = useCallback(async (userId: string) => {
+    // Verifica se é super admin
+    const { data: superAdmin } = await supabase
+      .from('super_admins')
+      .select('user_id')
+      .eq('user_id', userId)
+      .maybeSingle() as { data: { user_id: string } | null; error: unknown }
+
+    if (superAdmin) {
+      return { clientId: null, clientName: null, isAdmin: true, isSuperAdmin: true }
+    }
+
     const { data: binding, error } = await supabase
       .from('client_users')
       .select('client_id, role')
       .eq('user_id', userId)
       .single() as { data: { client_id: string; role: string } | null; error: unknown }
 
-    if (error || !binding) return { clientId: null, clientName: null, isAdmin: false }
+    if (error || !binding) return { clientId: null, clientName: null, isAdmin: false, isSuperAdmin: false }
 
     const { data: client } = await supabase
       .from('clients')
@@ -43,24 +55,23 @@ export function useAuth() {
       clientId: client?.id ?? null,
       clientName: client?.name ?? null,
       isAdmin: binding.role === 'admin',
+      isSuperAdmin: false,
     }
   }, [])
 
   useEffect(() => {
-    // Carrega sessão inicial
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) {
-        setState({ user: null, clientId: null, clientName: null, isAdmin: false, isLoading: false })
+        setState({ user: null, clientId: null, clientName: null, isAdmin: false, isSuperAdmin: false, isLoading: false })
         return
       }
       const binding = await fetchClientBinding(user.id)
       setState({ user, ...binding, isLoading: false })
     })
 
-    // Escuta mudanças de sessão (login/logout)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_OUT' || !session?.user) {
-        setState({ user: null, clientId: null, clientName: null, isAdmin: false, isLoading: false })
+        setState({ user: null, clientId: null, clientName: null, isAdmin: false, isSuperAdmin: false, isLoading: false })
         router.push('/login')
         return
       }
