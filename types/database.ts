@@ -39,7 +39,6 @@ export interface Conversation {
   metadata: Record<string, unknown>
   created_at: string
   updated_at: string
-  // joins
   clients?: Client
   agents?: Agent
 }
@@ -70,6 +69,11 @@ export interface ClientUser {
   created_at: string
 }
 
+export interface SuperAdmin {
+  user_id: string
+  created_at: string
+}
+
 export type Database = {
   public: {
     Tables: {
@@ -77,6 +81,7 @@ export type Database = {
       agents: { Row: Agent; Insert: Omit<Agent, 'id' | 'created_at'>; Update: Partial<Agent> }
       conversations: { Row: Conversation; Insert: Omit<Conversation, 'id' | 'created_at' | 'updated_at'>; Update: Partial<Conversation> }
       client_users: { Row: ClientUser; Insert: Omit<ClientUser, 'id' | 'created_at'>; Update: Partial<ClientUser> }
+      super_admins: { Row: SuperAdmin; Insert: Omit<SuperAdmin, 'created_at'>; Update: Partial<SuperAdmin> }
     }
     Views: Record<string, never>
     Functions: Record<string, never>
